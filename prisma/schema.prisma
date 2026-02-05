@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  fullName     String      // Added to match "Full Name" input
+  email        String      @unique
+  phoneNumber  String?     // Added to match "Phone Number" input
+  password     String
+  accountType  AccountType @default(BUYER) // To track if they clicked "Buyer" or "Seller"
+  role         Role        @default(USER)     // System level: USER or ADMIN
+  
+  vouchers     Voucher[]   @relation("Seller")
+  orders       Order[]
+  cart         Cart?
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Voucher {
+  id           String      @id @default(cuid())
+  outlet       String   
+  faceValue    Float    
+  salePrice    Float    
+  sellerPayout Float    
+  category     String
+  status       Status      @default(PENDING) 
+  
+  sellerId     String
+  seller       User        @relation("Seller", fields: [sellerId], references: [id])
+  
+  cartItems    CartItem[]
+  orderItems   OrderItem[] // Relation for tracking sales
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  user      User?      @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  voucherId String
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, voucherId])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  
+  customerName  String
+  customerEmail String
+  customerPhone String
+  
+  totalAmount   Float
+  status        OrderStatus @default(PENDING)
+  
+  items         OrderItem[]
+  payment       Payment?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  voucherId String
+  voucher   Voucher  @relation(fields: [voucherId], references: [id])
+  
+  quantity  Int
+  price     Float
+
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String        @unique
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  provider    String        @default("PAYSHAP")
+  status      PaymentStatus @default(PENDING)
+  referenceId String?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum AccountType {
+  BUYER
+  SELLER
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}

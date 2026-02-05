@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@prisma/client": "^7.3.0",
+    "pg": "^8.17.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "prisma": "^7.3.0"
+  }
+}
