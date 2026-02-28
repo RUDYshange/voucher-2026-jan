@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model Voucher {
+  id          Int     @id
+  name        String
+  description String?
+  value       Decimal
+  retailer    String
+  expiryDate  DateTime @map("expiry_date")
+  categories  VoucherCategory[]
+
+  @@map("vouchers")
+}
+
+model Category {
+  id        Int     @id
+  name      String
+  vouchers  VoucherCategory[]
+
+  @@map("categories")
+}
+
+model VoucherCategory {
+  voucherId   Int
+  categoryId  Int
+  voucher     Voucher   @relation(fields: [voucherId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  @@id([voucherId, categoryId])
+  @@map("voucher_categories")
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String
+  role      String  @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
